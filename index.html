@@ -1,62 +1,74 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VaultShare VOICE & ZIP PRO</title>
+    <title>VaultShare ULTRA | Full Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; transition: all 0.3s; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
         .gradient-bg { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); }
         .chat-area { height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 20px; }
-        .voice-recording { background: #ef4444 !important; animation: pulse 1s infinite; }
+        .voice-active { background: #ef4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .lang-btn { opacity: 0.5; cursor: pointer; transition: 0.2s; font-weight: bold; }
+        .lang-btn.active { opacity: 1; color: #3b82f6; border-bottom: 2px solid #3b82f6; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        audio::-webkit-media-controls-enclosure { background-color: rgba(59, 130, 246, 0.1); }
     </style>
 </head>
 <body class="min-h-screen pb-10">
 
     <div class="max-w-6xl mx-auto px-4">
-        <nav class="flex justify-between items-center py-8">
+        <nav class="flex flex-col md:flex-row justify-between items-center py-8 gap-4">
             <h1 class="text-3xl font-black tracking-tighter text-white uppercase italic">Vault<span class="text-blue-500">Share</span></h1>
-            <button onclick="openModal('modal-create')" class="gradient-bg px-8 py-3 rounded-2xl font-bold shadow-xl hover:scale-105 transition">
-                + Создать группу
-            </button>
+            
+            <div class="flex items-center gap-6">
+                <div class="flex gap-3 text-sm bg-slate-900/50 p-2 rounded-xl border border-slate-800">
+                    <span onclick="setLanguage('ua')" id="lang-ua" class="lang-btn">UA</span>
+                    <span onclick="setLanguage('ru')" id="lang-ru" class="lang-btn">RU</span>
+                    <span onclick="setLanguage('en')" id="lang-en" class="lang-btn">EN</span>
+                </div>
+                <button onclick="openModal('modal-create')" id="btn-create-top" class="gradient-bg px-8 py-3 rounded-2xl font-bold shadow-xl hover:scale-105 transition">
+                    + Створити групу
+                </button>
+            </div>
         </nav>
+
         <div id="groupsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </div>
 
     <div id="modal-group" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-2 md:p-4">
         <div class="glass w-full max-w-6xl rounded-[2.5rem] p-6 md:p-10 max-h-[95vh] overflow-y-auto relative border-slate-700">
             <button onclick="closeModal('modal-group')" class="absolute top-6 right-8 text-slate-500 hover:text-white text-4xl">&times;</button>
-            <h2 id="currentGroupName" class="text-3xl font-black text-white mb-6">Группа</h2>
+            
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="currentGroupName" class="text-3xl font-black text-white italic truncate pr-4">...</h2>
+                <button onclick="openModal('modal-settings')" class="bg-slate-800 p-3 rounded-xl hover:bg-slate-700 transition">⚙️</button>
+            </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div>
-                    <h3 class="text-xl font-bold mb-4">📂 Файлы</h3>
+                    <h3 id="label-files" class="text-xl font-bold mb-4">📂 Файли</h3>
                     <div class="bg-slate-900/50 p-6 rounded-2xl border-2 border-dashed border-slate-700 mb-6 text-center">
                         <input type="file" id="fileInput" class="hidden" onchange="document.getElementById('uploadStatus').classList.remove('hidden')">
-                        <label for="fileInput" class="cursor-pointer text-blue-400 font-bold">Выбрать файл</label>
+                        <label for="fileInput" id="label-select-file" class="cursor-pointer text-blue-400 font-bold underline">Вибрати файл</label>
                         <div id="uploadStatus" class="mt-4 hidden">
-                            <button onclick="uploadFile()" id="confirmUploadBtn" class="bg-blue-600 px-6 py-2 rounded-xl font-bold text-sm">Загрузить</button>
+                            <button onclick="uploadFile()" id="confirmUploadBtn" class="bg-blue-600 px-6 py-2 rounded-xl font-bold text-sm">OK</button>
                         </div>
                     </div>
                     <div id="filesList" class="space-y-3"></div>
                 </div>
 
                 <div class="flex flex-col border-l border-slate-800 pl-0 lg:pl-10">
-                    <h3 class="text-xl font-bold mb-4">💬 Чат</h3>
+                    <h3 id="label-chat" class="text-xl font-bold mb-4">💬 Чат</h3>
                     <div id="chatArea" class="chat-area bg-slate-900/30 rounded-2xl mb-4"></div>
                     <div class="flex gap-2 items-center">
-                        <input id="chatInput" type="text" placeholder="Текст..." class="flex-1 bg-slate-900 border border-slate-700 p-4 rounded-xl outline-none focus:border-blue-500 text-white">
-                        
-                        <button id="voiceBtn" onclick="toggleVoice()" class="bg-slate-800 p-4 rounded-full hover:bg-slate-700 transition shadow-lg">🎙️</button>
-                        
+                        <input id="chatInput" type="text" placeholder="..." class="flex-1 bg-slate-900 border border-slate-700 p-4 rounded-xl outline-none text-white">
+                        <button id="voiceBtn" onclick="toggleVoice()" class="bg-slate-800 p-4 rounded-full transition">🎙️</button>
                         <button onclick="sendMessage()" class="bg-blue-600 px-6 py-4 rounded-xl font-bold">➤</button>
                     </div>
                 </div>
@@ -64,86 +76,275 @@
         </div>
     </div>
 
+    <div id="modal-settings" class="hidden fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
+        <div class="glass w-full max-w-md rounded-[2rem] p-10">
+            <h2 class="text-2xl font-bold mb-6 text-white" id="label-settings">Налаштування</h2>
+            <div class="space-y-4">
+                <input id="editName" type="text" placeholder="Нова назва" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-white outline-none">
+                <input id="editPass" type="password" placeholder="Новий пароль" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-white outline-none">
+                <hr class="border-slate-800 my-4">
+                <button onclick="updateGroup()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">Зберегти зміни</button>
+                <button onclick="deleteCurrentGroup()" class="w-full bg-red-600/20 text-red-500 py-4 rounded-xl font-bold hover:bg-red-600 hover:text-white transition">ВИДАЛИТИ ГРУПУ</button>
+                <button onclick="closeModal('modal-settings')" class="w-full text-slate-500 py-2">Закрити</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-create" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div class="glass w-full max-w-md rounded-[2rem] p-10">
-            <h2 class="text-2xl font-bold mb-6 text-white">Новый сейф</h2>
-            <input id="newGroupName" type="text" placeholder="Имя группы" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl mb-4 text-white outline-none focus:border-blue-500">
-            <input id="newGroupPass" type="password" placeholder="Пароль" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl mb-6 text-white outline-none focus:border-blue-500">
-            <button onclick="createGroup()" class="w-full gradient-bg py-4 rounded-xl font-bold">Создать</button>
+            <h2 id="label-new-vault" class="text-3xl font-black mb-8 text-white">Новий сейф</h2>
+            <div class="space-y-5">
+                <input id="newGroupName" type="text" placeholder="Ім'я групи" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none">
+                <input id="newGroupPass" type="password" placeholder="Пароль (пусто - без шифру)" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none">
+                <button onclick="createGroup()" id="btn-create-confirm" class="w-full gradient-bg py-5 rounded-2xl font-black text-lg">Створити</button>
+                <button onclick="closeModal('modal-create')" id="btn-cancel" class="w-full text-slate-500 py-2">Скасувати</button>
+            </div>
         </div>
     </div>
 
     <script>
+        const i18n = {
+            ua: {
+                create_btn: "+ Створити групу",
+                files: "📂 Файли",
+                select_file: "Обрати файл",
+                upload: "Завантажити",
+                chat: "💬 Чат",
+                new_vault: "Новий сейф",
+                group_name: "Назва групи",
+                pass: "Пароль (пусто - без шифру)",
+                create: "Створити",
+                cancel: "Скасувати",
+                enter_pass: "Введіть пароль для",
+                wrong_pass: "Пароль невірний!",
+                voice_msg: "Голосове повідомлення",
+                download: "Скачати",
+                delete: "Видалити",
+                settings: "Налаштування групи",
+                edit_name: "Нова назва",
+                edit_pass: "Новий пароль",
+                save: "Зберегти",
+                del_group_btn: "ВИДАЛИТИ ГРУПУ",
+                confirm_del: "Ви впевнені? Все буде видалено!"
+            },
+            ru: {
+                create_btn: "+ Создать группу",
+                files: "📂 Файлы",
+                select_file: "Выбрать файл",
+                upload: "Загрузить",
+                chat: "💬 Чат",
+                new_vault: "Новый сейф",
+                group_name: "Имя группы",
+                pass: "Пароль (пусто - без шифра)",
+                create: "Создать",
+                cancel: "Отмена",
+                enter_pass: "Введите пароль для",
+                wrong_pass: "Пароль неверный!",
+                voice_msg: "Голосовое сообщение",
+                download: "Скачать",
+                delete: "Удалить",
+                settings: "Настройки группы",
+                edit_name: "Новое название",
+                edit_pass: "Новый пароль",
+                save: "Сохранить",
+                del_group_btn: "УДАЛИТЬ ГРУППУ",
+                confirm_del: "Вы уверены? Всё будет удалено!"
+            },
+            en: {
+                create_btn: "+ Create Group",
+                files: "📂 Files",
+                select_file: "Select file",
+                upload: "Upload",
+                chat: "💬 Chat",
+                new_vault: "New Vault",
+                group_name: "Group Name",
+                pass: "Password (empty - no encryption)",
+                create: "Create",
+                cancel: "Cancel",
+                enter_pass: "Enter password for",
+                wrong_pass: "Wrong password!",
+                voice_msg: "Voice message",
+                download: "Download",
+                delete: "Delete",
+                settings: "Group Settings",
+                edit_name: "New Name",
+                edit_pass: "New Password",
+                save: "Save",
+                del_group_btn: "DELETE GROUP",
+                confirm_del: "Are you sure? Everything will be deleted!"
+            }
+        };
+
+        let currentLang = 'ua';
         const SUPABASE_URL = 'https://iotnksuhuxjfqawyyyyw.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvdG5rc3VodXhqZnFhd3l5eXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NTg1ODUsImV4cCI6MjA4NzQzNDU4NX0.AG1Mw5SbD2x5jODm15SckqdUD_5prfqunhi84mPkg40';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
+
         let activeGroupId = null;
+        let activeGroupPass = null;
         let chatSub = null;
         let mediaRec;
         let audioChunks = [];
         let isRec = false;
 
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`lang-${lang}`).classList.add('active');
+
+            document.getElementById('btn-create-top').innerText = i18n[lang].create_btn;
+            document.getElementById('label-files').innerText = i18n[lang].files;
+            document.getElementById('label-select-file').innerText = i18n[lang].select_file;
+            document.getElementById('confirmUploadBtn').innerText = i18n[lang].upload;
+            document.getElementById('label-chat').innerText = i18n[lang].chat;
+            document.getElementById('label-new-vault').innerText = i18n[lang].new_vault;
+            document.getElementById('newGroupName').placeholder = i18n[lang].group_name;
+            document.getElementById('newGroupPass').placeholder = i18n[lang].pass;
+            document.getElementById('btn-create-confirm').innerText = i18n[lang].create;
+            document.getElementById('btn-cancel').innerText = i18n[lang].cancel;
+            document.getElementById('label-settings').innerText = i18n[lang].settings;
+            document.getElementById('editName').placeholder = i18n[lang].edit_name;
+            document.getElementById('editPass').placeholder = i18n[lang].edit_pass;
+            
+            fetchGroups();
+        }
+
         async function fetchGroups() {
             const { data } = await _supabase.from('groups').select('*').order('created_at', { ascending: false });
-            document.getElementById('groupsGrid').innerHTML = data.map(g => `
-                <div class="glass p-8 rounded-[2rem] border border-slate-800 hover:border-blue-500 transition-all cursor-pointer" onclick="tryEnter('${g.id}', '${g.password}', '${g.name}')">
-                    <h3 class="text-2xl font-bold text-white mb-2">${g.name}</h3>
-                    <p class="text-blue-500 text-xs font-black italic underline underline-offset-4">ВОЙТИ В СЕЙФ 🔒</p>
+            document.getElementById('groupsGrid').innerHTML = (data || []).map(g => `
+                <div class="glass p-8 rounded-[2rem] border border-slate-800 hover:border-blue-500 transition-all shadow-xl cursor-pointer" onclick="tryEnter('${g.id}', '${g.password}', '${g.name}')">
+                    <h3 class="text-2xl font-bold text-white mb-2 truncate">${g.name}</h3>
+                    <p class="text-blue-500 text-[10px] font-black uppercase italic">${g.password ? 'Encrypted 🔒' : 'Public 🔓'}</p>
                 </div>
             `).join('');
         }
 
         function tryEnter(id, pass, name) {
-            if(prompt(`Пароль для "${name}":`) === pass) {
-                activeGroupId = id;
-                document.getElementById('currentGroupName').innerText = name;
-                openModal('modal-group');
-                loadFiles(id);
-                loadMessages(id);
-                subscribe(id);
-            } else alert("Минутку, пароль не тот!");
+            if (!pass) {
+                // Без пароля
+                enter(id, pass, name);
+            } else {
+                const input = prompt(`${i18n[currentLang].enter_pass} "${name}":`);
+                if (input === pass) enter(id, pass, name);
+                else if (input !== null) alert(i18n[currentLang].wrong_pass);
+            }
         }
 
-        // --- ГОЛОСОВЫЕ ---
+        function enter(id, pass, name) {
+            activeGroupId = id;
+            activeGroupPass = pass;
+            document.getElementById('currentGroupName').innerText = name;
+            document.getElementById('editName').value = name;
+            document.getElementById('editPass').value = pass || '';
+            openModal('modal-group');
+            loadFiles(id); loadMessages(id); subscribe(id);
+        }
+
+        // --- КЕРУВАННЯ ГРУПОЮ ---
+        async function updateGroup() {
+            const newName = document.getElementById('editName').value;
+            const newPass = document.getElementById('editPass').value;
+            
+            const { error } = await _supabase.from('groups').update({ name: newName, password: newPass }).eq('id', activeGroupId);
+            if (!error) {
+                alert("OK!");
+                document.getElementById('currentGroupName').innerText = newName;
+                activeGroupPass = newPass;
+                closeModal('modal-settings');
+                fetchGroups();
+            }
+        }
+
+        async function deleteCurrentGroup() {
+            if (confirm(i18n[currentLang].confirm_del)) {
+                await _supabase.from('groups').delete().eq('id', activeGroupId);
+                closeModal('modal-settings');
+                closeModal('modal-group');
+                fetchGroups();
+            }
+        }
+
+        // --- ГОЛОСОВІ ---
         async function toggleVoice() {
             const btn = document.getElementById('voiceBtn');
             if(!isRec) {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRec = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRec.ondataavailable = e => audioChunks.push(e.data);
-                mediaRec.onstop = async () => {
-                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const path = `${activeGroupId}/v_${Date.now()}.webm`;
-                    await _supabase.storage.from('files').upload(path, blob);
-                    const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(path);
-                    await _supabase.from('messages').insert([{ group_id: activeGroupId, text: publicUrl, type: 'voice' }]);
-                };
-                mediaRec.start();
-                isRec = true;
-                btn.classList.add('voice-recording');
-                btn.innerText = "🛑";
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRec = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRec.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRec.onstop = async () => {
+                        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const path = `${activeGroupId}/v_${Date.now()}.webm`;
+                        await _supabase.storage.from('files').upload(path, blob);
+                        const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(path);
+                        await _supabase.from('messages').insert([{ group_id: activeGroupId, text: publicUrl, type: 'voice' }]);
+                    };
+                    mediaRec.start(); isRec = true;
+                    btn.classList.add('voice-active'); btn.innerText = "🛑";
+                } catch(e) { alert("Microphone error!"); }
             } else {
-                mediaRec.stop();
-                isRec = false;
-                btn.classList.remove('voice-recording');
-                btn.innerText = "🎙️";
+                mediaRec.stop(); isRec = false;
+                btn.classList.remove('voice-active'); btn.innerText = "🎙️";
             }
+        }
+
+        // --- ФАЙЛИ ---
+        async function loadFiles(gid) {
+            const { data } = await _supabase.storage.from('files').list(gid);
+            document.getElementById('filesList').innerHTML = (data || []).map(f => {
+                const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(`${gid}/${f.name}`);
+                return `<div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800 flex justify-between items-center text-xs group">
+                    <span class="truncate pr-4">${f.name}</span>
+                    <div class="flex gap-3">
+                        <a href="${publicUrl}" target="_blank" class="text-blue-400 font-bold uppercase">${i18n[currentLang].download}</a>
+                        <button onclick="deleteFile('${f.name}')" class="text-red-500 font-bold uppercase">${i18n[currentLang].delete}</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function uploadFile() {
+            const input = document.getElementById('fileInput');
+            let file = input.files[0];
+            const btn = document.getElementById('confirmUploadBtn');
+            if(!file) return;
+
+            btn.disabled = true; btn.innerText = "...";
+
+            if(file.size > 50*1024*1024) {
+                const zip = new JSZip(); zip.file(file.name, file);
+                file = await zip.generateAsync({type:"blob", compression:"DEFLATE"});
+            }
+
+            const name = `${activeGroupId}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+            const { error } = await _supabase.storage.from('files').upload(name, file);
+            if(error) alert(error.message);
+            
+            loadFiles(activeGroupId);
+            btn.disabled = false; btn.innerText = "OK";
+            document.getElementById('uploadStatus').classList.add('hidden');
+        }
+
+        async function deleteFile(name) { 
+            if(confirm("?")) { 
+                await _supabase.storage.from('files').remove([`${activeGroupId}/${name}`]); 
+                loadFiles(activeGroupId); 
+            } 
         }
 
         // --- ЧАТ ---
         async function loadMessages(gid) {
             const { data } = await _supabase.from('messages').select('*').eq('group_id', gid).order('created_at', { ascending: true });
             const area = document.getElementById('chatArea');
-            area.innerHTML = data.map(m => {
-                if(m.type === 'voice') {
-                    return `<div class="bg-blue-600/10 p-4 rounded-2xl border border-blue-500/20 self-start">
-                        <p class="text-[9px] font-bold text-blue-400 mb-2 uppercase">Голосовое</p>
-                        <audio src="${m.text}" controls class="h-8"></audio>
-                    </div>`;
-                }
+            area.innerHTML = (data || []).map(m => {
+                const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                if(m.type === 'voice') return `<div class="bg-blue-600/10 p-4 rounded-2xl border border-blue-500/20 self-start">
+                    <p class="text-[9px] font-bold text-blue-400 mb-2 uppercase">${i18n[currentLang].voice_msg} • ${time}</p>
+                    <audio src="${m.text}" controls class="h-8 w-44"></audio>
+                </div>`;
                 return `<div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 self-start">
+                    <p class="text-[9px] text-slate-500 mb-1">${time}</p>
                     <p class="text-sm text-slate-200">${m.text}</p>
                 </div>`;
             }).join('');
@@ -157,55 +358,28 @@
             el.value = '';
         }
 
-        // --- ФАЙЛЫ + ZIP ---
-        async function loadFiles(gid) {
-            const { data } = await _supabase.storage.from('files').list(gid);
-            document.getElementById('filesList').innerHTML = (data || []).map(f => {
-                const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(`${gid}/${f.name}`);
-                return `<div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
-                    <span class="truncate pr-4">${f.name}</span>
-                    <a href="${publicUrl}" target="_blank" class="text-blue-400 font-bold uppercase">Скачать</a>
-                </div>`;
-            }).join('');
-        }
-
-        async function uploadFile() {
-            const input = document.getElementById('fileInput');
-            let file = input.files[0];
-            const btn = document.getElementById('confirmUploadBtn');
-            btn.disabled = true; btn.innerText = "СЖАТИЕ...";
-
-            if(file.size > 50*1024*1024) {
-                const zip = new JSZip();
-                zip.file(file.name, file);
-                file = await zip.generateAsync({type:"blob", compression:"DEFLATE"});
-            }
-
-            btn.innerText = "ЗАГРУЗКА...";
-            const name = `${activeGroupId}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-            await _supabase.storage.from('files').upload(name, file);
-            loadFiles(activeGroupId);
-            btn.disabled = false; btn.innerText = "ЗАГРУЗИТЬ";
-            document.getElementById('uploadStatus').classList.add('hidden');
+        function subscribe(gid) {
+            if(chatSub) _supabase.removeChannel(chatSub);
+            chatSub = _supabase.channel('room').on('postgres_changes', { 
+                event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${gid}` 
+            }, () => loadMessages(gid)).subscribe();
         }
 
         // --- СИСТЕМА ---
-        function subscribe(gid) {
-            if(chatSub) _supabase.removeChannel(chatSub);
-            chatSub = _supabase.channel('room1').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${gid}` }, () => loadMessages(gid)).subscribe();
-        }
-
         async function createGroup() {
             const n = document.getElementById('newGroupName').value;
             const p = document.getElementById('newGroupPass').value;
-            await _supabase.from('groups').insert([{ name: n, password: p }]);
+            if(!n) return alert("Name required!");
+            await _supabase.from('groups').insert([{ name: n, password: p || null }]);
             closeModal('modal-create'); fetchGroups();
+            document.getElementById('newGroupName').value = '';
+            document.getElementById('newGroupPass').value = '';
         }
 
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        fetchGroups();
+        setLanguage('ua');
     </script>
 </body>
 </html>
