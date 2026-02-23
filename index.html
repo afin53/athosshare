@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VaultShare ULTRA | Full Edition</title>
+    <title>VaultShare VOICE & ZIP PRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
         .gradient-bg { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); }
-        .chat-area { height: 350px; overflow-y: auto; scrollbar-width: thin; }
-        .group-card:hover { border-color: #3b82f6; transform: translateY(-3px); }
-        ::-webkit-scrollbar { width: 6px; }
+        .chat-area { height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 20px; }
+        .voice-recording { background: #ef4444 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        audio::-webkit-media-controls-enclosure { background-color: rgba(59, 130, 246, 0.1); }
     </style>
 </head>
 <body class="min-h-screen pb-10">
@@ -22,40 +24,40 @@
     <div class="max-w-6xl mx-auto px-4">
         <nav class="flex justify-between items-center py-8">
             <h1 class="text-3xl font-black tracking-tighter text-white uppercase italic">Vault<span class="text-blue-500">Share</span></h1>
-            <button onclick="openModal('modal-create')" class="gradient-bg px-8 py-3 rounded-2xl font-bold shadow-xl shadow-blue-500/20 hover:scale-105 transition active:scale-95">
+            <button onclick="openModal('modal-create')" class="gradient-bg px-8 py-3 rounded-2xl font-bold shadow-xl hover:scale-105 transition">
                 + Создать группу
             </button>
         </nav>
-
         <div id="groupsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        <div id="emptyState" class="hidden text-center py-32 border-2 border-dashed border-slate-800 rounded-3xl text-slate-500">Пока тут пусто...</div>
     </div>
 
     <div id="modal-group" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-2 md:p-4">
         <div class="glass w-full max-w-6xl rounded-[2.5rem] p-6 md:p-10 max-h-[95vh] overflow-y-auto relative border-slate-700">
-            <button onclick="closeModal('modal-group')" class="absolute top-6 right-8 text-slate-500 hover:text-white text-4xl transition">&times;</button>
-            <h2 id="currentGroupName" class="text-3xl font-black text-white mb-6">Название группы</h2>
+            <button onclick="closeModal('modal-group')" class="absolute top-6 right-8 text-slate-500 hover:text-white text-4xl">&times;</button>
+            <h2 id="currentGroupName" class="text-3xl font-black text-white mb-6">Группа</h2>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div>
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">📂 Файлы</h3>
+                    <h3 class="text-xl font-bold mb-4">📂 Файлы</h3>
                     <div class="bg-slate-900/50 p-6 rounded-2xl border-2 border-dashed border-slate-700 mb-6 text-center">
                         <input type="file" id="fileInput" class="hidden" onchange="document.getElementById('uploadStatus').classList.remove('hidden')">
-                        <label for="fileInput" class="cursor-pointer text-blue-400 font-bold hover:underline">Выбрать файл</label>
-                        <p class="text-[10px] text-slate-500 mt-1">Авто-ZIP при > 50MB</p>
+                        <label for="fileInput" class="cursor-pointer text-blue-400 font-bold">Выбрать файл</label>
                         <div id="uploadStatus" class="mt-4 hidden">
-                            <button onclick="uploadFile()" id="confirmUploadBtn" class="bg-blue-600 px-10 py-3 rounded-xl font-black uppercase text-xs">Загрузить</button>
+                            <button onclick="uploadFile()" id="confirmUploadBtn" class="bg-blue-600 px-6 py-2 rounded-xl font-bold text-sm">Загрузить</button>
                         </div>
                     </div>
                     <div id="filesList" class="space-y-3"></div>
                 </div>
 
                 <div class="flex flex-col border-l border-slate-800 pl-0 lg:pl-10">
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">💬 Секретный чат</h3>
-                    <div id="chatArea" class="chat-area bg-slate-900/30 rounded-2xl p-4 mb-4 space-y-3 shadow-inner"></div>
-                    <div class="flex gap-2">
-                        <input id="chatInput" type="text" placeholder="Напишите что-нибудь..." class="flex-1 bg-slate-900 border border-slate-700 p-4 rounded-xl outline-none focus:border-blue-500 text-white shadow-lg">
-                        <button onclick="sendMessage()" class="bg-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-500 transition shadow-lg shadow-blue-600/20">➤</button>
+                    <h3 class="text-xl font-bold mb-4">💬 Чат</h3>
+                    <div id="chatArea" class="chat-area bg-slate-900/30 rounded-2xl mb-4"></div>
+                    <div class="flex gap-2 items-center">
+                        <input id="chatInput" type="text" placeholder="Текст..." class="flex-1 bg-slate-900 border border-slate-700 p-4 rounded-xl outline-none focus:border-blue-500 text-white">
+                        
+                        <button id="voiceBtn" onclick="toggleVoice()" class="bg-slate-800 p-4 rounded-full hover:bg-slate-700 transition shadow-lg">🎙️</button>
+                        
+                        <button onclick="sendMessage()" class="bg-blue-600 px-6 py-4 rounded-xl font-bold">➤</button>
                     </div>
                 </div>
             </div>
@@ -63,14 +65,11 @@
     </div>
 
     <div id="modal-create" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="glass w-full max-w-md rounded-[2rem] p-10 border-slate-700">
-            <h2 class="text-3xl font-black mb-8 text-white">Новый сейф</h2>
-            <div class="space-y-5">
-                <input id="newGroupName" type="text" placeholder="Имя группы" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none focus:border-blue-500 shadow-inner">
-                <input id="newGroupPass" type="password" placeholder="Пароль" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none focus:border-blue-500 shadow-inner">
-                <button onclick="createGroup()" class="w-full gradient-bg py-5 rounded-2xl font-black text-lg shadow-lg shadow-blue-500/20 mt-4">Создать доступ</button>
-                <button onclick="closeModal('modal-create')" class="w-full text-slate-500 py-2 hover:text-slate-300 transition">Отмена</button>
-            </div>
+        <div class="glass w-full max-w-md rounded-[2rem] p-10">
+            <h2 class="text-2xl font-bold mb-6 text-white">Новый сейф</h2>
+            <input id="newGroupName" type="text" placeholder="Имя группы" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl mb-4 text-white outline-none focus:border-blue-500">
+            <input id="newGroupPass" type="password" placeholder="Пароль" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl mb-6 text-white outline-none focus:border-blue-500">
+            <button onclick="createGroup()" class="w-full gradient-bg py-4 rounded-xl font-bold">Создать</button>
         </div>
     </div>
 
@@ -78,137 +77,133 @@
         const SUPABASE_URL = 'https://iotnksuhuxjfqawyyyyw.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvdG5rc3VodXhqZnFhd3l5eXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NTg1ODUsImV4cCI6MjA4NzQzNDU4NX0.AG1Mw5SbD2x5jODm15SckqdUD_5prfqunhi84mPkg40';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
         let activeGroupId = null;
-        let chatSubscription = null;
+        let chatSub = null;
+        let mediaRec;
+        let audioChunks = [];
+        let isRec = false;
 
         async function fetchGroups() {
-            const { data, error } = await _supabase.from('groups').select('*').order('created_at', { ascending: false });
-            const grid = document.getElementById('groupsGrid');
-            const empty = document.getElementById('emptyState');
-            if (error || !data.length) { empty.classList.remove('hidden'); grid.innerHTML = ''; return; }
-            empty.classList.add('hidden');
-            grid.innerHTML = data.map(g => `
-                <div class="group-card glass p-8 rounded-[2rem] border border-slate-800 transition-all flex flex-col justify-between shadow-xl">
-                    <div onclick="tryEnterGroup('${g.id}', '${g.password}', '${g.name}')" class="cursor-pointer">
-                        <h3 class="text-2xl font-bold text-white mb-2 truncate">${g.name}</h3>
-                        <p class="text-blue-500 text-[10px] font-black uppercase tracking-widest italic">Protected Vault 🔒</p>
-                    </div>
-                    <button onclick="secureDeleteGroup('${g.id}', '${g.password}', '${g.name}')" class="text-slate-600 hover:text-red-500 text-[9px] font-bold uppercase mt-8 text-left transition-colors">Удалить группу (пароль)</button>
+            const { data } = await _supabase.from('groups').select('*').order('created_at', { ascending: false });
+            document.getElementById('groupsGrid').innerHTML = data.map(g => `
+                <div class="glass p-8 rounded-[2rem] border border-slate-800 hover:border-blue-500 transition-all cursor-pointer" onclick="tryEnter('${g.id}', '${g.password}', '${g.name}')">
+                    <h3 class="text-2xl font-bold text-white mb-2">${g.name}</h3>
+                    <p class="text-blue-500 text-xs font-black italic underline underline-offset-4">ВОЙТИ В СЕЙФ 🔒</p>
                 </div>
             `).join('');
         }
 
-        async function createGroup() {
-            const name = document.getElementById('newGroupName').value;
-            const password = document.getElementById('newGroupPass').value;
-            if(!name || !password) return alert("Заполни данные!");
-            await _supabase.from('groups').insert([{ name, password }]);
-            closeModal('modal-create'); fetchGroups();
-        }
-
-        async function secureDeleteGroup(id, correctPass, name) {
-            const pass = prompt(`Введите пароль группы "${name}" для удаления:`);
-            if (pass === correctPass) {
-                if(confirm("Удалить группу навсегда?")) {
-                    await _supabase.from('groups').delete().eq('id', id);
-                    fetchGroups();
-                }
-            } else if (pass !== null) alert("Неверно!");
-        }
-
-        function tryEnterGroup(id, correctPass, name) {
-            const pass = prompt(`Введите пароль для "${name}":`);
-            if(pass === correctPass) {
+        function tryEnter(id, pass, name) {
+            if(prompt(`Пароль для "${name}":`) === pass) {
                 activeGroupId = id;
                 document.getElementById('currentGroupName').innerText = name;
                 openModal('modal-group');
                 loadFiles(id);
                 loadMessages(id);
-                subscribeToChat(id);
-            } else if (pass !== null) alert("Доступ запрещен!");
+                subscribe(id);
+            } else alert("Минутку, пароль не тот!");
         }
 
-        // --- ЛОГИКА ФАЙЛОВ С ZIP ---
-        async function loadFiles(groupId) {
-            const list = document.getElementById('filesList');
-            const { data } = await _supabase.storage.from('files').list(groupId);
-            if(!data || data.length === 0) { list.innerHTML = '<p class="text-slate-500 text-sm italic">Пусто...</p>'; return; }
-            list.innerHTML = data.map(f => {
-                const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(`${groupId}/${f.name}`);
-                return `<div class="flex justify-between items-center bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-                    <span class="truncate pr-2 text-slate-300 text-xs">${f.name}</span>
-                    <div class="flex gap-3">
-                        <a href="${publicUrl}" target="_blank" class="text-blue-400 font-bold text-[10px] uppercase">Скачать</a>
-                        <button onclick="deleteFile('${f.name}')" class="text-red-500 font-bold text-[10px] uppercase">Удалить</button>
-                    </div>
+        // --- ГОЛОСОВЫЕ ---
+        async function toggleVoice() {
+            const btn = document.getElementById('voiceBtn');
+            if(!isRec) {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRec = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRec.ondataavailable = e => audioChunks.push(e.data);
+                mediaRec.onstop = async () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const path = `${activeGroupId}/v_${Date.now()}.webm`;
+                    await _supabase.storage.from('files').upload(path, blob);
+                    const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(path);
+                    await _supabase.from('messages').insert([{ group_id: activeGroupId, text: publicUrl, type: 'voice' }]);
+                };
+                mediaRec.start();
+                isRec = true;
+                btn.classList.add('voice-recording');
+                btn.innerText = "🛑";
+            } else {
+                mediaRec.stop();
+                isRec = false;
+                btn.classList.remove('voice-recording');
+                btn.innerText = "🎙️";
+            }
+        }
+
+        // --- ЧАТ ---
+        async function loadMessages(gid) {
+            const { data } = await _supabase.from('messages').select('*').eq('group_id', gid).order('created_at', { ascending: true });
+            const area = document.getElementById('chatArea');
+            area.innerHTML = data.map(m => {
+                if(m.type === 'voice') {
+                    return `<div class="bg-blue-600/10 p-4 rounded-2xl border border-blue-500/20 self-start">
+                        <p class="text-[9px] font-bold text-blue-400 mb-2 uppercase">Голосовое</p>
+                        <audio src="${m.text}" controls class="h-8"></audio>
+                    </div>`;
+                }
+                return `<div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 self-start">
+                    <p class="text-sm text-slate-200">${m.text}</p>
+                </div>`;
+            }).join('');
+            area.scrollTop = area.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const el = document.getElementById('chatInput');
+            if(!el.value.trim()) return;
+            await _supabase.from('messages').insert([{ group_id: activeGroupId, text: el.value, type: 'text' }]);
+            el.value = '';
+        }
+
+        // --- ФАЙЛЫ + ZIP ---
+        async function loadFiles(gid) {
+            const { data } = await _supabase.storage.from('files').list(gid);
+            document.getElementById('filesList').innerHTML = (data || []).map(f => {
+                const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(`${gid}/${f.name}`);
+                return `<div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                    <span class="truncate pr-4">${f.name}</span>
+                    <a href="${publicUrl}" target="_blank" class="text-blue-400 font-bold uppercase">Скачать</a>
                 </div>`;
             }).join('');
         }
 
         async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            let file = fileInput.files[0];
-            if(!file) return;
-
+            const input = document.getElementById('fileInput');
+            let file = input.files[0];
             const btn = document.getElementById('confirmUploadBtn');
-            btn.disabled = true;
+            btn.disabled = true; btn.innerText = "СЖАТИЕ...";
 
-            const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
-            let fileName = file.name;
-
-            if (file.size > MAX_SIZE) {
-                btn.innerText = "ZIP-СЖАТИЕ...";
+            if(file.size > 50*1024*1024) {
                 const zip = new JSZip();
                 zip.file(file.name, file);
-                file = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
-                fileName = fileName.split('.')[0] + ".zip";
+                file = await zip.generateAsync({type:"blob", compression:"DEFLATE"});
             }
 
             btn.innerText = "ЗАГРУЗКА...";
-            const cleanName = fileName.replace(/[^\x00-\x7F]/g, "x").replace(/\s+/g, "_");
-            const { error } = await _supabase.storage.from('files').upload(`${activeGroupId}/${Date.now()}_${cleanName}`, file);
-
-            if (error) alert(error.message);
-            else { loadFiles(activeGroupId); document.getElementById('uploadStatus').classList.add('hidden'); }
-            btn.innerText = "Загрузить"; btn.disabled = false;
+            const name = `${activeGroupId}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+            await _supabase.storage.from('files').upload(name, file);
+            loadFiles(activeGroupId);
+            btn.disabled = false; btn.innerText = "ЗАГРУЗИТЬ";
+            document.getElementById('uploadStatus').classList.add('hidden');
         }
 
-        async function deleteFile(name) {
-            if(confirm("Удалить файл?")) {
-                await _supabase.storage.from('files').remove([`${activeGroupId}/${name}`]);
-                loadFiles(activeGroupId);
-            }
+        // --- СИСТЕМА ---
+        function subscribe(gid) {
+            if(chatSub) _supabase.removeChannel(chatSub);
+            chatSub = _supabase.channel('room1').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${gid}` }, () => loadMessages(gid)).subscribe();
         }
 
-        // --- ЛОГИКА ЧАТА ---
-        async function loadMessages(groupId) {
-            const { data } = await _supabase.from('messages').select('*').eq('group_id', groupId).order('created_at', { ascending: true });
-            const chatArea = document.getElementById('chatArea');
-            chatArea.innerHTML = data.map(m => `
-                <div class="bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 self-start max-w-[90%]">
-                    <p class="text-[9px] text-blue-500 font-black mb-1">${new Date(m.created_at).toLocaleTimeString()}</p>
-                    <p class="text-sm text-slate-200">${m.text}</p>
-                </div>
-            `).join('');
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            if(!input.value.trim()) return;
-            await _supabase.from('messages').insert([{ group_id: activeGroupId, text: input.value }]);
-            input.value = '';
-        }
-
-        function subscribeToChat(groupId) {
-            if(chatSubscription) _supabase.removeChannel(chatSubscription);
-            chatSubscription = _supabase.channel('messages')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` }, () => loadMessages(groupId))
-                .subscribe();
+        async function createGroup() {
+            const n = document.getElementById('newGroupName').value;
+            const p = document.getElementById('newGroupPass').value;
+            await _supabase.from('groups').insert([{ name: n, password: p }]);
+            closeModal('modal-create'); fetchGroups();
         }
 
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); if(chatSubscription) _supabase.removeChannel(chatSubscription); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         fetchGroups();
     </script>
