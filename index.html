@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultShare | Private Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .gradient-bg { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); }
+        .group-card:hover { transform: translateY(-5px); border-color: #3b82f6; }
+    </style>
+</head>
+<body class="min-h-screen pb-10">
+
+    <div class="max-w-5xl mx-auto px-4">
+        <nav class="flex justify-between items-center py-8">
+            <h1 class="text-3xl font-black tracking-tighter text-white uppercase">Vault<span class="text-blue-500">Share</span></h1>
+            <button onclick="openModal('modal-create')" class="gradient-bg px-6 py-2 rounded-full font-bold shadow-lg shadow-blue-500/20 hover:scale-105 transition">
+                + Создать группу
+            </button>
+        </nav>
+
+        <div id="groupsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+
+        <div id="emptyState" class="hidden text-center py-20">
+            <p class="text-slate-500 text-xl">Групп пока нет. Станьте первым!</p>
+        </div>
+    </div>
+
+    <div id="modal-group" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="glass w-full max-w-3xl rounded-3xl p-6 md:p-10 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-8">
+                <h2 id="currentGroupName" class="text-2xl font-bold text-white tracking-tight">Название группы</h2>
+                <button onclick="closeModal('modal-group')" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+            </div>
+
+            <div class="bg-slate-800/50 p-6 rounded-2xl border-2 border-dashed border-slate-700 mb-8 text-center">
+                <input type="file" id="fileInput" class="hidden" onchange="showUploadBtn()">
+                <label for="fileInput" class="cursor-pointer text-blue-400 hover:text-blue-300 font-medium">
+                    Выберите файл для отправки в группу
+                </label>
+                <div id="uploadStatus" class="mt-4 hidden">
+                    <button onclick="uploadFile()" id="confirmUploadBtn" class="bg-blue-600 px-8 py-2 rounded-lg font-bold">Загрузить</button>
+                </div>
+            </div>
+
+            <div id="filesList" class="grid gap-3">
+                </div>
+        </div>
+    </div>
+
+    <div id="modal-create" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="glass w-full max-w-md rounded-2xl p-8">
+            <h2 class="text-2xl font-bold mb-6 text-white">Новая группа</h2>
+            <div class="space-y-4">
+                <input id="newGroupName" type="text" placeholder="Имя группы" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl outline-none focus:border-blue-500 transition">
+                <input id="newGroupPass" type="password" placeholder="Придумайте пароль" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl outline-none focus:border-blue-500 transition">
+                <button onclick="createGroup()" class="w-full gradient-bg py-4 rounded-xl font-bold text-lg mt-2">Создать сейчас</button>
+                <button onclick="closeModal('modal-create')" class="w-full text-slate-500 py-2">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ДАННЫЕ СУПАБЕЙС
+        const SUPABASE_URL = 'https://iotnksuhuxjfqawyyyyw.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvdG5rc3VodXhqZnFhd3l5eXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NTg1ODUsImV4cCI6MjA4NzQzNDU4NX0.AG1Mw5SbD2x5jODm15SckqdUD_5prfqunhi84mPkg40';
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let activeGroupId = null;
+
+        // Загрузка всех групп
+        async function fetchGroups() {
+            const { data, error } = await _supabase.from('groups').select('*').order('created_at', { ascending: false });
+            
+            const grid = document.getElementById('groupsGrid');
+            const empty = document.getElementById('emptyState');
+            
+            if (error || !data.length) {
+                empty.classList.remove('hidden');
+                grid.innerHTML = '';
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.innerHTML = data.map(g => `
+                <div onclick="tryEnterGroup('${g.id}', '${g.password}', '${g.name}')" 
+                     class="group-card glass p-6 rounded-2xl cursor-pointer transition-all border border-transparent">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-blue-500/10 rounded-lg text-blue-500">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1">${g.name}</h3>
+                    <p class="text-slate-500 text-sm italic">Защищено паролем</p>
+                </div>
+            `).join('');
+        }
+
+        // Создание группы
+        async function createGroup() {
+            const name = document.getElementById('newGroupName').value;
+            const password = document.getElementById('newGroupPass').value;
+            if(!name || !password) return alert("Введите данные!");
+
+            const { error } = await _supabase.from('groups').insert([{ name, password }]);
+            if (error) alert("Ошибка БД: " + error.message);
+            else {
+                closeModal('modal-create');
+                fetchGroups();
+                document.getElementById('newGroupName').value = '';
+                document.getElementById('newGroupPass').value = '';
+            }
+        }
+
+        // Вход в группу
+        function tryEnterGroup(id, correctPass, name) {
+            const pass = prompt(`Пароль для "${name}":`);
+            if(pass === correctPass) {
+                activeGroupId = id;
+                document.getElementById('currentGroupName').innerText = name;
+                openModal('modal-group');
+                loadFiles(id);
+            } else if (pass !== null) {
+                alert("Неверный пароль!");
+            }
+        }
+
+        // Загрузка списка файлов
+        async function loadFiles(groupId) {
+            const list = document.getElementById('filesList');
+            list.innerHTML = '<p class="text-center text-slate-500 py-10">Ищем файлы в облаке...</p>';
+            
+            const { data, error } = await _supabase.storage.from('files').list(groupId);
+            
+            if(error || !data || data.length === 0) {
+                list.innerHTML = '<div class="text-center py-10 text-slate-500">В этой группе пока нет файлов.</div>';
+                return;
+            }
+
+            list.innerHTML = data.map(file => {
+                const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(`${groupId}/${file.name}`);
+                return `
+                    <div class="flex justify-between items-center bg-slate-800/40 p-4 rounded-xl border border-slate-700 hover:border-slate-500 transition">
+                        <span class="truncate text-slate-200 font-medium pr-4">${file.name}</span>
+                        <a href="${publicUrl}" target="_blank" download class="text-blue-400 font-bold hover:underline shrink-0 text-sm uppercase tracking-wider">Скачать</a>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Функции загрузки файла
+        function showUploadBtn() {
+            document.getElementById('uploadStatus').classList.remove('hidden');
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if(!file || !activeGroupId) return;
+
+            const btn = document.getElementById('confirmUploadBtn');
+            btn.innerText = "Загрузка...";
+            btn.disabled = true;
+
+            const fileName = `${Date.now()}_${file.name}`;
+            const { error } = await _supabase.storage.from('files').upload(`${activeGroupId}/${fileName}`, file);
+
+            if (error) {
+                alert("Ошибка хранилища: " + error.message);
+            } else {
+                loadFiles(activeGroupId);
+                document.getElementById('uploadStatus').classList.add('hidden');
+            }
+            btn.innerText = "Загрузить";
+            btn.disabled = false;
+        }
+
+        // Утилиты
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // Поехали!
+        fetchGroups();
+    </script>
+</body>
+</html>
