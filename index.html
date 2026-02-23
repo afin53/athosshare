@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VaultShare ULTRA | Full Control</title>
+    <title>VaultShare ULTRA | Fixed Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -43,12 +43,12 @@
 
     <div id="modal-group" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-2 md:p-4">
         <div class="glass w-full max-w-6xl rounded-[2.5rem] p-6 md:p-10 max-h-[95vh] overflow-y-auto relative border-slate-700">
-            <button onclick="closeModal('modal-group')" class="absolute top-6 right-8 text-slate-500 hover:text-white text-4xl">&times;</button>
-            
-            <div class="flex justify-between items-center mb-6">
-                <h2 id="currentGroupName" class="text-3xl font-black text-white italic truncate pr-4">...</h2>
-                <button onclick="openModal('modal-settings')" class="bg-slate-800 p-3 rounded-xl hover:bg-slate-700 transition">⚙️</button>
+            <div class="absolute top-6 right-6 flex items-center gap-4">
+                <button onclick="openModal('modal-settings')" class="bg-slate-800 p-3 rounded-xl hover:bg-slate-700 transition text-xl shadow-lg">⚙️</button>
+                <button onclick="closeModal('modal-group')" class="text-slate-500 hover:text-white text-4xl transition-colors">&times;</button>
             </div>
+            
+            <h2 id="currentGroupName" class="text-3xl font-black text-white italic truncate pr-24 mb-6">...</h2>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div>
@@ -77,14 +77,20 @@
     </div>
 
     <div id="modal-settings" class="hidden fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
-        <div class="glass w-full max-w-md rounded-[2rem] p-10">
+        <div class="glass w-full max-w-md rounded-[2rem] p-10 border-blue-500/30 border">
             <h2 class="text-2xl font-bold mb-6 text-white" id="label-settings">Налаштування</h2>
             <div class="space-y-4">
-                <input id="editName" type="text" placeholder="Нова назва" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-white outline-none">
-                <input id="editPass" type="password" placeholder="Новий пароль" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-white outline-none">
+                <div>
+                    <label class="text-[10px] text-slate-500 uppercase font-bold ml-2">Назва</label>
+                    <input id="editName" type="text" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-white outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-500 uppercase font-bold ml-2">Пароль</label>
+                    <input id="editPass" type="text" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-white outline-none focus:border-blue-500">
+                </div>
                 <hr class="border-slate-800 my-4">
-                <button onclick="updateGroup()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">Зберегти зміни</button>
-                <button onclick="deleteCurrentGroup()" class="w-full bg-red-600/20 text-red-500 py-4 rounded-xl font-bold hover:bg-red-600 hover:text-white transition">ВИДАЛИТИ ГРУПУ</button>
+                <button onclick="updateGroup()" id="btn-save-settings" class="w-full bg-blue-600 py-4 rounded-xl font-bold shadow-lg shadow-blue-600/20 active:scale-95 transition">Зберегти зміни</button>
+                <button onclick="deleteCurrentGroup()" class="w-full bg-red-600/10 text-red-500 py-4 rounded-xl font-bold hover:bg-red-600 hover:text-white transition">ВИДАЛИТИ ГРУПУ</button>
                 <button onclick="closeModal('modal-settings')" class="w-full text-slate-500 py-2">Закрити</button>
             </div>
         </div>
@@ -94,8 +100,8 @@
         <div class="glass w-full max-w-md rounded-[2rem] p-10">
             <h2 id="label-new-vault" class="text-3xl font-black mb-8 text-white">Новий сейф</h2>
             <div class="space-y-5">
-                <input id="newGroupName" type="text" placeholder="Ім'я групи" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none">
-                <input id="newGroupPass" type="password" placeholder="Пароль (пусто - без шифру)" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none">
+                <input id="newGroupName" type="text" placeholder="Ім'я групи" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none focus:border-blue-500">
+                <input id="newGroupPass" type="password" placeholder="Пароль (пусто - без шифру)" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none focus:border-blue-500">
                 <button onclick="createGroup()" id="btn-create-confirm" class="w-full gradient-bg py-5 rounded-2xl font-black text-lg">Створити</button>
                 <button onclick="closeModal('modal-create')" id="btn-cancel" class="w-full text-slate-500 py-2">Скасувати</button>
             </div>
@@ -105,73 +111,28 @@
     <script>
         const i18n = {
             ua: {
-                create_btn: "+ Створити групу",
-                files: "📂 Файли",
-                select_file: "Обрати файл",
-                upload: "Завантажити",
-                chat: "💬 Чат",
-                new_vault: "Новий сейф",
-                group_name: "Назва групи",
-                pass: "Пароль (пусто - без шифру)",
-                create: "Створити",
-                cancel: "Скасувати",
-                enter_pass: "Введіть пароль для",
-                wrong_pass: "Пароль невірний!",
-                voice_msg: "Голосове повідомлення",
-                download: "Скачати",
-                delete: "Видалити",
-                settings: "Налаштування групи",
-                edit_name: "Нова назва",
-                edit_pass: "Новий пароль",
-                save: "Зберегти",
-                del_group_btn: "ВИДАЛИТИ ГРУПУ",
-                confirm_del: "Ви впевнені? Все буде видалено!"
+                create_btn: "+ Створити групу", files: "📂 Файли", select_file: "Вибрати файл", upload: "Завантажити",
+                chat: "💬 Чат", new_vault: "Новий сейф", group_name: "Назва групи", pass: "Пароль (пусто - публічна)",
+                create: "Створити", cancel: "Скасувати", enter_pass: "Пароль для", wrong_pass: "Невірно!",
+                voice_msg: "Голосове повідомлення", download: "Скачати", delete: "Видалити",
+                settings: "Налаштування", edit_name: "Нова назва", edit_pass: "Новий пароль",
+                save: "Зберегти", del_group_btn: "ВИДАЛИТИ ГРУПУ", confirm_del: "Видалити групу назавжди?"
             },
             ru: {
-                create_btn: "+ Создать группу",
-                files: "📂 Файлы",
-                select_file: "Выбрать файл",
-                upload: "Загрузить",
-                chat: "💬 Чат",
-                new_vault: "Новый сейф",
-                group_name: "Имя группы",
-                pass: "Пароль (пусто - без шифра)",
-                create: "Создать",
-                cancel: "Отмена",
-                enter_pass: "Введите пароль для",
-                wrong_pass: "Пароль неверный!",
-                voice_msg: "Голосовое сообщение",
-                download: "Скачать",
-                delete: "Удалить",
-                settings: "Настройки группы",
-                edit_name: "Новое название",
-                edit_pass: "Новый пароль",
-                save: "Сохранить",
-                del_group_btn: "УДАЛИТЬ ГРУППУ",
-                confirm_del: "Вы уверены? Всё будет удалено!"
+                create_btn: "+ Создать группу", files: "📂 Файлы", select_file: "Выбрать файл", upload: "Загрузить",
+                chat: "💬 Чат", new_vault: "Новый сейф", group_name: "Имя группы", pass: "Пароль (пусто - публичная)",
+                create: "Создать", cancel: "Отмена", enter_pass: "Пароль для", wrong_pass: "Неверно!",
+                voice_msg: "Голосовое сообщение", download: "Скачать", delete: "Удалить",
+                settings: "Настройки", edit_name: "Новое имя", edit_pass: "Новый пароль",
+                save: "Сохранить", del_group_btn: "УДАЛИТЬ ГРУППУ", confirm_del: "Удалить группу навсегда?"
             },
             en: {
-                create_btn: "+ Create Group",
-                files: "📂 Files",
-                select_file: "Select file",
-                upload: "Upload",
-                chat: "💬 Chat",
-                new_vault: "New Vault",
-                group_name: "Group Name",
-                pass: "Password (empty - no encryption)",
-                create: "Create",
-                cancel: "Cancel",
-                enter_pass: "Enter password for",
-                wrong_pass: "Wrong password!",
-                voice_msg: "Voice message",
-                download: "Download",
-                delete: "Delete",
-                settings: "Group Settings",
-                edit_name: "New Name",
-                edit_pass: "New Password",
-                save: "Save",
-                del_group_btn: "DELETE GROUP",
-                confirm_del: "Are you sure? Everything will be deleted!"
+                create_btn: "+ Create Group", files: "📂 Files", select_file: "Select file", upload: "Upload",
+                chat: "💬 Chat", new_vault: "New Vault", group_name: "Group Name", pass: "Password (empty - public)",
+                create: "Create", cancel: "Cancel", enter_pass: "Password for", wrong_pass: "Wrong!",
+                voice_msg: "Voice message", download: "Download", delete: "Delete",
+                settings: "Settings", edit_name: "New Name", edit_pass: "New Password",
+                save: "Save", del_group_btn: "DELETE GROUP", confirm_del: "Delete group forever?"
             }
         };
 
@@ -181,7 +142,6 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let activeGroupId = null;
-        let activeGroupPass = null;
         let chatSub = null;
         let mediaRec;
         let audioChunks = [];
@@ -191,7 +151,6 @@
             currentLang = lang;
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`lang-${lang}`).classList.add('active');
-
             document.getElementById('btn-create-top').innerText = i18n[lang].create_btn;
             document.getElementById('label-files').innerText = i18n[lang].files;
             document.getElementById('label-select-file').innerText = i18n[lang].select_file;
@@ -203,9 +162,7 @@
             document.getElementById('btn-create-confirm').innerText = i18n[lang].create;
             document.getElementById('btn-cancel').innerText = i18n[lang].cancel;
             document.getElementById('label-settings').innerText = i18n[lang].settings;
-            document.getElementById('editName').placeholder = i18n[lang].edit_name;
-            document.getElementById('editPass').placeholder = i18n[lang].edit_pass;
-            
+            document.getElementById('btn-save-settings').innerText = i18n[lang].save;
             fetchGroups();
         }
 
@@ -214,16 +171,14 @@
             document.getElementById('groupsGrid').innerHTML = (data || []).map(g => `
                 <div class="glass p-8 rounded-[2rem] border border-slate-800 hover:border-blue-500 transition-all shadow-xl cursor-pointer" onclick="tryEnter('${g.id}', '${g.password}', '${g.name}')">
                     <h3 class="text-2xl font-bold text-white mb-2 truncate">${g.name}</h3>
-                    <p class="text-blue-500 text-[10px] font-black uppercase italic">${g.password ? 'Encrypted 🔒' : 'Public 🔓'}</p>
+                    <p class="text-blue-500 text-[10px] font-black uppercase italic">${g.password ? 'Locked 🔒' : 'Open 🔓'}</p>
                 </div>
             `).join('');
         }
 
         function tryEnter(id, pass, name) {
-            if (!pass) {
-                // Без пароля
-                enter(id, pass, name);
-            } else {
+            if (!pass) enter(id, pass, name);
+            else {
                 const input = prompt(`${i18n[currentLang].enter_pass} "${name}":`);
                 if (input === pass) enter(id, pass, name);
                 else if (input !== null) alert(i18n[currentLang].wrong_pass);
@@ -232,7 +187,6 @@
 
         function enter(id, pass, name) {
             activeGroupId = id;
-            activeGroupPass = pass;
             document.getElementById('currentGroupName').innerText = name;
             document.getElementById('editName').value = name;
             document.getElementById('editPass').value = pass || '';
@@ -240,18 +194,31 @@
             loadFiles(id); loadMessages(id); subscribe(id);
         }
 
-        // --- КЕРУВАННЯ ГРУПОЮ ---
+        // --- FIXED UPDATE LOGIC ---
         async function updateGroup() {
+            const btn = document.getElementById('btn-save-settings');
             const newName = document.getElementById('editName').value;
             const newPass = document.getElementById('editPass').value;
             
-            const { error } = await _supabase.from('groups').update({ name: newName, password: newPass }).eq('id', activeGroupId);
+            if(!newName) return;
+            btn.innerText = "...";
+
+            const { error } = await _supabase.from('groups').update({ 
+                name: newName, 
+                password: newPass || null 
+            }).eq('id', activeGroupId);
+
             if (!error) {
-                alert("OK!");
                 document.getElementById('currentGroupName').innerText = newName;
-                activeGroupPass = newPass;
-                closeModal('modal-settings');
+                btn.innerText = "✅ Saved!";
+                setTimeout(() => { 
+                    btn.innerText = i18n[currentLang].save; 
+                    closeModal('modal-settings');
+                }, 1000);
                 fetchGroups();
+            } else {
+                alert("Error: " + error.message);
+                btn.innerText = "Error";
             }
         }
 
@@ -264,14 +231,13 @@
             }
         }
 
-        // --- ГОЛОСОВІ ---
+        // --- VOICE ---
         async function toggleVoice() {
             const btn = document.getElementById('voiceBtn');
             if(!isRec) {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRec = new MediaRecorder(stream);
-                    audioChunks = [];
+                    mediaRec = new MediaRecorder(stream); audioChunks = [];
                     mediaRec.ondataavailable = e => audioChunks.push(e.data);
                     mediaRec.onstop = async () => {
                         const blob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -282,23 +248,23 @@
                     };
                     mediaRec.start(); isRec = true;
                     btn.classList.add('voice-active'); btn.innerText = "🛑";
-                } catch(e) { alert("Microphone error!"); }
+                } catch(e) { alert("Mic error!"); }
             } else {
                 mediaRec.stop(); isRec = false;
                 btn.classList.remove('voice-active'); btn.innerText = "🎙️";
             }
         }
 
-        // --- ФАЙЛИ ---
+        // --- FILES ---
         async function loadFiles(gid) {
             const { data } = await _supabase.storage.from('files').list(gid);
             document.getElementById('filesList').innerHTML = (data || []).map(f => {
                 const { data: { publicUrl } } = _supabase.storage.from('files').getPublicUrl(`${gid}/${f.name}`);
-                return `<div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800 flex justify-between items-center text-xs group">
-                    <span class="truncate pr-4">${f.name}</span>
+                return `<div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                    <span class="truncate pr-4 text-slate-400">${f.name}</span>
                     <div class="flex gap-3">
-                        <a href="${publicUrl}" target="_blank" class="text-blue-400 font-bold uppercase">${i18n[currentLang].download}</a>
-                        <button onclick="deleteFile('${f.name}')" class="text-red-500 font-bold uppercase">${i18n[currentLang].delete}</button>
+                        <a href="${publicUrl}" target="_blank" class="text-blue-400 font-bold uppercase underline">${i18n[currentLang].download}</a>
+                        <button onclick="deleteFile('${f.name}')" class="text-red-900 hover:text-red-500 font-bold uppercase transition-colors">${i18n[currentLang].delete}</button>
                     </div>
                 </div>`;
             }).join('');
@@ -309,38 +275,34 @@
             let file = input.files[0];
             const btn = document.getElementById('confirmUploadBtn');
             if(!file) return;
-
-            btn.disabled = true; btn.innerText = "...";
-
+            btn.disabled = true; btn.innerText = "ZIP...";
             if(file.size > 50*1024*1024) {
                 const zip = new JSZip(); zip.file(file.name, file);
                 file = await zip.generateAsync({type:"blob", compression:"DEFLATE"});
             }
-
+            btn.innerText = "↑";
             const name = `${activeGroupId}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-            const { error } = await _supabase.storage.from('files').upload(name, file);
-            if(error) alert(error.message);
-            
+            await _supabase.storage.from('files').upload(name, file);
             loadFiles(activeGroupId);
             btn.disabled = false; btn.innerText = "OK";
             document.getElementById('uploadStatus').classList.add('hidden');
         }
 
         async function deleteFile(name) { 
-            if(confirm("?")) { 
+            if(confirm("Delete?")) { 
                 await _supabase.storage.from('files').remove([`${activeGroupId}/${name}`]); 
                 loadFiles(activeGroupId); 
             } 
         }
 
-        // --- ЧАТ ---
+        // --- MESSAGES ---
         async function loadMessages(gid) {
             const { data } = await _supabase.from('messages').select('*').eq('group_id', gid).order('created_at', { ascending: true });
             const area = document.getElementById('chatArea');
             area.innerHTML = (data || []).map(m => {
                 const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 if(m.type === 'voice') return `<div class="bg-blue-600/10 p-4 rounded-2xl border border-blue-500/20 self-start">
-                    <p class="text-[9px] font-bold text-blue-400 mb-2 uppercase">${i18n[currentLang].voice_msg} • ${time}</p>
+                    <p class="text-[9px] font-bold text-blue-400 mb-2 uppercase italic">${time} • VOICE</p>
                     <audio src="${m.text}" controls class="h-8 w-44"></audio>
                 </div>`;
                 return `<div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 self-start">
@@ -365,11 +327,10 @@
             }, () => loadMessages(gid)).subscribe();
         }
 
-        // --- СИСТЕМА ---
         async function createGroup() {
             const n = document.getElementById('newGroupName').value;
             const p = document.getElementById('newGroupPass').value;
-            if(!n) return alert("Name required!");
+            if(!n) return;
             await _supabase.from('groups').insert([{ name: n, password: p || null }]);
             closeModal('modal-create'); fetchGroups();
             document.getElementById('newGroupName').value = '';
